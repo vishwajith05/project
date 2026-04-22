@@ -398,7 +398,7 @@ function renderReports() {
             <div style="font-size:15px;font-weight:700">${r.title}</div>
             <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5">${r.desc}</div>
           </div>
-          <button class="btn btn-outline btn-sm" style="width:100%;margin-top:auto" onclick="event.stopPropagation();showToast('Downloading ${r.title}...','success')">⬇️ Download PDF</button>
+          <button class="btn btn-outline btn-sm" style="width:100%;margin-top:auto" onclick="event.stopPropagation(); downloadReportPDF('${r.title}')">⬇️ Download PDF</button>
         </div>
       `).join('')}
     </div>
@@ -586,4 +586,85 @@ function deleteUser(id) {
     showToast('User deleted.', 'error');
     renderUserMgmt();
   }
+}
+
+function downloadReportPDF(reportTitle) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const timestamp = new Date().toLocaleString('en-IN');
+  
+  showToast(`Generating ${reportTitle}...`, 'info');
+
+  // PDF Styling
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(30, 58, 138); // Dark blue
+  doc.text("SmartCampus System Report", 105, 20, { align: 'center' });
+  
+  doc.setFontSize(16);
+  doc.setTextColor(100, 116, 139);
+  doc.text(reportTitle, 105, 30, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated on: ${timestamp}`, 105, 38, { align: 'center' });
+  doc.line(20, 42, 190, 42);
+
+  let bodyData = [];
+  let columns = [];
+
+  if (reportTitle === 'Gate Pass Report') {
+    columns = ["ID", "Student", "Type", "Destination", "From", "To", "Status"];
+    bodyData = GatePasses.map(p => [p.id, p.studentName, p.type, p.destination, p.from, p.to, p.status.toUpperCase()]);
+  } else if (reportTitle === 'Mess Report') {
+    columns = ["Student", "Breakfast", "Lunch", "Dinner", "Total"];
+    bodyData = Students.map(s => {
+      const b = MessBookings[s.id] || {};
+      const total = Object.values(b).filter(v => v === 'booked').length;
+      return [s.name, b.breakfast || '-', b.lunch || '-', b.dinner || '-', total];
+    });
+  } else if (reportTitle === 'Security Report') {
+    columns = ["Time", "Student", "Type", "Pass ID", "Guard"];
+    bodyData = EntryExitLogs.map(l => [l.time, l.studentName, l.type.toUpperCase(), l.passId, l.guard]);
+  } else if (reportTitle === 'Student Report') {
+    columns = ["ID", "Name", "Room", "Branch", "Year", "Status"];
+    bodyData = Students.map(s => [s.id, s.name, s.room, s.branch, s.year, s.status.toUpperCase()]);
+  } else {
+    // Default summary report
+    doc.text("Summary Analytics:", 20, 55);
+    doc.autoTable({
+      startY: 60,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Total Students", Students.length],
+        ["Total Gate Passes", GatePasses.length],
+        ["Approved Passes", GatePasses.filter(p=>p.status==='approved').length],
+        ["Pending Passes", GatePasses.filter(p=>p.status==='pending').length],
+        ["Students Outside", Students.filter(s=>s.status==='outside').length],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [79, 70, 229] }
+    });
+    doc.save(`${reportTitle.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+    showToast(`${reportTitle} downloaded!`, 'success');
+    return;
+  }
+
+  doc.autoTable({
+    startY: 50,
+    head: [columns],
+    body: bodyData,
+    theme: 'grid',
+    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+    margin: { top: 50 }
+  });
+
+  const finalY = doc.lastAutoTable.finalY || 50;
+  doc.setFontSize(10);
+  doc.setTextColor(150);
+  doc.text("--- End of Report ---", 105, finalY + 15, { align: 'center' });
+
+  doc.save(`${reportTitle.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+  showToast(`${reportTitle} downloaded!`, 'success');
 }

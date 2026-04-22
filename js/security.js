@@ -276,14 +276,15 @@ function handleVerification(input) {
 
   // If we found a student but no active pass, show student info but indicate no valid pass
   const activePass = pass && pass.status === 'approved' ? pass : null;
+  const isUsed = pass && pass.status === 'used';
   const isApproved = !!activePass;
   const action = student && student.status === 'inside' ? 'exit' : 'entry';
 
   document.getElementById('scan-result').innerHTML = `
-    <div style="background:${isApproved ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)'};border:1px solid ${isApproved ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'};border-radius:var(--radius-md);padding:16px;margin-bottom:12px">
-      <div style="font-size:32px;text-align:center;margin-bottom:8px">${isApproved ? '✅' : 'ℹ️'}</div>
-      <div style="font-size:18px;font-weight:700;text-align:center;color:${isApproved ? 'var(--accent-green)' : 'var(--accent-orange)'}">${isApproved ? 'ACCESS GRANTED' : student ? 'STUDENT IDENTIFIED' : 'ACCESS DENIED'}</div>
-      <div style="font-size:12px;text-align:center;color:var(--text-muted);margin-top:4px">${isApproved ? 'Pass Approved' : student ? 'No active gate pass found' : 'Invalid ID'}</div>
+    <div style="background:${isApproved ? 'rgba(16,185,129,0.08)' : isUsed ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'};border:1px solid ${isApproved ? 'rgba(16,185,129,0.3)' : isUsed ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'};border-radius:var(--radius-md);padding:16px;margin-bottom:12px">
+      <div style="font-size:32px;text-align:center;margin-bottom:8px">${isApproved ? '✅' : isUsed ? '⚠️' : 'ℹ️'}</div>
+      <div style="font-size:18px;font-weight:700;text-align:center;color:${isApproved ? 'var(--accent-green)' : isUsed ? 'var(--accent-orange)' : 'var(--accent-orange)'}">${isApproved ? 'ACCESS GRANTED' : isUsed ? 'PASS ALREADY USED' : student ? 'STUDENT IDENTIFIED' : 'ACCESS DENIED'}</div>
+      <div style="font-size:12px;text-align:center;color:var(--text-muted);margin-top:4px">${isApproved ? 'Pass Approved' : isUsed ? 'This pass has already been scanned' : student ? 'No active gate pass found' : 'Invalid ID'}</div>
     </div>
     ${student ? `
     <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px">
@@ -308,6 +309,7 @@ function handleVerification(input) {
   `;
 
   if (isApproved) showToast('QR verified! Student: ' + (student ? student.name : pass.studentName), 'success');
+  else if (isUsed) showToast('Pass already used and cancelled.', 'warning');
   else if (student) showToast('Student identified: ' + student.name, 'info');
   else showToast('Access denied.', 'error');
 }

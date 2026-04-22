@@ -298,16 +298,15 @@ function saveMenu(e) {
 
 function renderFeedback() {
   const content = document.getElementById('page-content');
-  const feedbacks = [
-    { name: 'Arjun Sharma', date: 'Today', meal: 'Lunch', rating: 5, comment: 'Dal Makhani was excellent today!' },
-    { name: 'Priya Patel', date: 'Today', meal: 'Breakfast', rating: 3, comment: 'Idlis were a bit cold.' },
-    { name: 'Rahul Gupta', date: 'Yesterday', meal: 'Dinner', rating: 4, comment: 'Paneer was good, could use more roti.' },
-    { name: 'Sneha Reddy', date: 'Yesterday', meal: 'Lunch', rating: 2, comment: 'Rice was overcooked.' },
-    { name: 'Kiran Kumar', date: 'Mar 14', meal: 'Dinner', rating: 5, comment: 'Best meal of the week!' },
-  ];
-  const avgRating = (feedbacks.reduce((a, f) => a + f.rating, 0) / feedbacks.length).toFixed(1);
+  const feedbacks = Feedbacks || [];
+  const avgRating = feedbacks.length > 0 ? (feedbacks.reduce((a, f) => a + Number(f.rating), 0) / feedbacks.length).toFixed(1) : "0.0";
 
   content.innerHTML = `
+    <div style="margin-bottom:20px">
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700">Mess Feedback Portal 💬</h2>
+      <p style="color:var(--text-secondary);font-size:14px;margin-top:4px">Anonymous Student Feedback & Ratings</p>
+    </div>
+
     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
       ${buildStatCard('⭐', 'orange', avgRating, 'Average Rating', null, null, 'orange')}
       ${buildStatCard('💬', 'purple', feedbacks.length, 'Total Feedback', null, null, '')}
@@ -315,22 +314,31 @@ function renderFeedback() {
       ${buildStatCard('😔', 'red', feedbacks.filter(f=>f.rating<=2).length, 'Needs Improvement', null, null, 'orange')}
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">💬 Recent Feedback</span></div>
-      ${feedbacks.map(f => `
-        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;margin-bottom:10px">
+      <div class="card-header">
+        <span class="card-title">💬 Recent Feedback (Anonymous)</span>
+        <span class="badge badge-pending">Privacy Mode: ON</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:12px">
+      ${feedbacks.length === 0 ? `<div class="empty-state"><p>No feedback received yet.</p></div>` : 
+        feedbacks.map(f => `
+        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;transition:var(--transition)" onmouseenter="this.style.borderColor='var(--accent-primary)'" onmouseleave="this.style.borderColor='var(--border-color)'">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:32px;height:32px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${f.name[0]}</div>
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;opacity:0.7">?</div>
               <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${f.name}</div>
-                <div style="font-size:11px;color:var(--text-muted)">${f.date} · ${f.meal}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Anonymous Student</div>
+                <div style="font-size:11px;color:var(--text-muted)">${new Date(f.createdAt).toLocaleDateString('en-IN')} · ${f.topic || 'General'}</div>
               </div>
             </div>
-            <div style="color:#f59e0b;font-size:14px">${'⭐'.repeat(f.rating)}</div>
+            <div style="background:rgba(245,158,11,0.1);padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:4px">
+              <span style="color:#f59e0b;font-weight:700;font-size:14px">${f.rating}</span>
+              <span style="color:#f59e0b;font-size:14px">⭐</span>
+            </div>
           </div>
-          <p style="font-size:13px;color:var(--text-secondary)">${f.comment}</p>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.5">${f.comment}</p>
         </div>
       `).join('')}
+      </div>
     </div>
   `;
 }

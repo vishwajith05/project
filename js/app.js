@@ -42,6 +42,9 @@ function initSocket() {
         Object.keys(MessSchedule).forEach(k => delete MessSchedule[k]);
         Object.assign(MessSchedule, db.messMenu);
       }
+      if (db.feedbacks) {
+        Feedbacks.splice(0, Feedbacks.length, ...db.feedbacks);
+      }
       // Re-render current page if logged in
       if (!document.getElementById('app').classList.contains('hidden')) {
         navigateTo(AppState.currentPage);
@@ -99,6 +102,15 @@ function initSocket() {
       Object.assign(MessSchedule, newMenu);
       if (AppState.currentPage === 'mess-menu' || AppState.currentPage === 'menu-mgmt') {
         navigateTo(AppState.currentPage);
+      }
+    });
+
+    socket.on('FEEDBACK_ADDED', (feedback) => {
+      if (!Feedbacks.find(f => f.id === feedback.id)) {
+        Feedbacks.unshift(feedback);
+        if (AppState.currentPage === 'feedback') {
+          navigateTo('feedback');
+        }
       }
     });
 

@@ -32,7 +32,10 @@ function renderStudentDashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">📋 Recent Gate Passes</span>
-          <button class="btn btn-sm btn-outline" onclick="navigateTo('gate-pass')">+ New Pass</button>
+          <div style="display:flex;gap:8px">
+            <span class="badge badge-active" style="font-size:10px">2 Daily Passes Ready</span>
+            <button class="btn btn-sm btn-outline" onclick="navigateTo('gate-pass')">+ New Pass</button>
+          </div>
         </div>
         ${myPasses.length === 0 ? `<div class="empty-state"><div class="empty-icon">🎫</div><p>No gate passes yet</p></div>` :
           `<div class="table-wrapper"><table>
@@ -205,12 +208,15 @@ function renderGatePassPage() {
             myPasses.map(p => `
               <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;transition:var(--transition)" onmouseenter="this.style.borderColor='var(--border-accent)'" onmouseleave="this.style.borderColor='var(--border-color)'">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                  <code style="color:var(--accent-primary);font-size:13px">${p.id}</code>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <code style="color:var(--accent-primary);font-size:13px">${p.id}</code>
+                    ${p.type === 'daily' ? '<span class="badge badge-active" style="background:rgba(99,102,241,0.1);color:var(--accent-primary);border:1px solid rgba(99,102,241,0.2)">DAILY</span>' : ''}
+                  </div>
                   ${buildBadge(p.status)}
                 </div>
                 <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px">${p.reason}</div>
                 <div style="font-size:12px;color:var(--text-secondary)">📍 ${p.destination}</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">📅 ${p.from} → ${p.to} &nbsp;·&nbsp; ${p.type}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">📅 ${p.from} ${p.to !== p.from ? `→ ${p.to}` : ''} &nbsp;·&nbsp; ${p.type}</div>
                 ${p.wardenNote ? `<div style="margin-top:8px;font-size:12px;color:var(--accent-orange);background:rgba(245,158,11,0.08);padding:8px;border-radius:var(--radius-sm)">💬 ${p.wardenNote}</div>` : ''}
                 ${p.status === 'approved' ? `
                 <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-color);text-align:center">
@@ -574,17 +580,13 @@ function renderFeedback() {
       <div class="card">
         <div class="card-header"><span class="card-title">📣 Recent Community Feedback</span></div>
         <div style="display:flex;flex-direction:column;gap:12px">
-          ${[
-            { name: 'Arjun', rating: 5, text: 'The new gate pass system is so smooth!' },
-            { name: 'Priya', rating: 4, text: 'Love the meal booking feature.' },
-            { name: 'Sunny', rating: 5, text: 'Security team is very helpful.' }
-          ].map(f => `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px">
+          ${Feedbacks.slice(0, 5).map(f => `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px">
             <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-              <strong>${f.name}</strong>
+              <strong>Anonymous Student</strong>
               <div style="font-size:12px">${'⭐'.repeat(f.rating)}</div>
             </div>
-            <p style="font-size:13px;color:var(--text-secondary);font-style:italic">"${f.text}"</p>
-          </div>`).join('')}
+            <p style="font-size:13px;color:var(--text-secondary);font-style:italic">"${f.comment}"</p>
+          </div>`).join('') || '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No community feedback yet.</p>'}
         </div>
       </div>
     </div>
@@ -600,10 +602,30 @@ function setRating(val) {
 function submitTestimony(e) {
   e.preventDefault();
   const r = document.getElementById('feedback-rating').value;
+  const topic = document.getElementById('feedback-topic').value;
+  const comment = document.getElementById('feedback-comment').value;
+
   if (r === "0") { showToast('Please select a rating!', 'warning'); return; }
-  showToast('Thank you for your testimony!', 'success');
+
+  const feedback = {
+    studentId: AppState.currentUser.id,
+    studentName: AppState.currentUser.name,
+    rating: Number(r),
+    topic,
+    comment
+  };
+
+  if (socket) {
+    socket.emit('SUBMIT_FEEDBACK', feedback);
+    showToast('Thank you for your feedback!', 'success');
+  } else {
+    Feedbacks.unshift({ ...feedback, id: Date.now(), createdAt: new Date().toISOString() });
+    showToast('Feedback saved locally!', 'success');
+  }
+
   e.target.reset();
   setRating(0);
+  renderFeedback();
 }
 
 function getGreeting() {

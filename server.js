@@ -21,16 +21,10 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, '.')));
 
 let db = {
-  users: [
-    // Default demo users
-    { id: 'S001', username: 'student1', password: 'password', name: 'Arjun Sharma', role: 'student', room: '101' },
-    { id: 'W001', username: 'warden1', password: 'password', name: 'Dr. Ramesh Rao', role: 'warden' },
-    { id: 'SEC01', username: 'security1', password: 'password', name: 'Duty Guard #1', role: 'security' },
-    { id: 'M001', username: 'mess1', password: 'password', name: 'Chef Mohan', role: 'mess' },
-    { id: 'ADM01', username: 'admin', password: 'password', name: 'System Admin', role: 'admin' }
-  ],
+  users: [],
   gatePasses: [],
   logs: [],
+  feedbacks: [],
   messBookings: {},
   messMenu: {
     breakfast: { name: 'Breakfast', time: '07:00 - 09:00', emoji: '🍳', items: ['Idli Sambar', 'Bread Butter', 'Corn Flakes', 'Boiled Eggs', 'Tea/Coffee', 'Fruit'] },
@@ -38,6 +32,52 @@ let db = {
     dinner:    { name: 'Dinner',    time: '19:00 - 21:30', emoji: '🍽️', items: ['Rice', 'Rajma', 'Paneer Butter Masala', 'Roti', 'Kheer', 'Pickle'] }
   }
 };
+
+// Daily Gate Pass Reset Logic
+function ensureDailyPasses() {
+  const today = new Date().toISOString().split('T')[0];
+  let changed = false;
+
+  db.users.forEach(user => {
+    if (user.role === 'student') {
+      // Check if student already has 2 passes for today
+      const todayPasses = db.gatePasses.filter(p => p.studentId === user.id && p.createdAt === today && p.type === 'daily');
+      
+      if (todayPasses.length < 2) {
+        for (let i = todayPasses.length; i < 2; i++) {
+          const newPass = {
+            id: `DP${user.id}${Date.now().toString().slice(-4)}${i}`,
+            studentId: user.id,
+            studentName: user.name,
+            reason: 'Daily Gate Pass',
+            destination: 'Local',
+            from: today,
+            to: today,
+            type: 'daily',
+            status: 'approved', // Pre-approved as they are "received" daily
+            wardenNote: 'System generated daily pass',
+            createdAt: today,
+            exitTime: '',
+            entryTime: '',
+            qrCode: `DP-${user.id}-${today}-${i}`
+          };
+          db.gatePasses.push(newPass);
+          changed = true;
+        }
+      }
+    }
+  });
+
+  if (changed) {
+    saveDB();
+    io.emit('SYNC_STATE', db);
+  }
+}
+
+// Run reset check every hour
+setInterval(ensureDailyPasses, 3600000);
+// Also run on startup
+setTimeout(ensureDailyPasses, 5000);
 
 // Persistence Logic
 function saveDB() {
@@ -114,8 +154,18 @@ io.on('connection', (socket) => {
     db.logs.unshift(log);
     const pass = db.gatePasses.find(p => p.id === log.passId);
     if (pass) {
-      if (log.type === 'exit') pass.exitTime = log.time;
-      if (log.type === 'entry') pass.entryTime = log.time;
+      if (log.type === 'exit') {
+        pass.exitTime = log.time;
+        // Mark pass as used when exiting (or entering if it's a one-time pass)
+        // For a daily pass, maybe it's "used" after one full cycle or immediately?
+        // Requirement: "immediately marked as used/cancelled"
+        pass.status = 'used'; 
+      }
+      if (log.type === 'entry') {
+        pass.entryTime = log.time;
+        // If it wasn't marked as used on exit, mark it now
+        pass.status = 'used';
+      }
     }
     
     // Update student status
@@ -127,6 +177,16 @@ io.on('connection', (socket) => {
     saveDB();
     io.emit('LOG_ADDED', log);
     io.emit('SYNC_STATE', db); 
+  });
+
+  // Handle Feedback
+  socket.on('SUBMIT_FEEDBACK', (feedback) => {
+    feedback.id = `FB${Date.now()}`;
+    feedback.createdAt = new Date().toISOString();
+    db.feedbacks.unshift(feedback);
+    saveDB();
+    io.emit('FEEDBACK_ADDED', feedback);
+    io.emit('SYNC_STATE', db);
   });
 
   // User Management
