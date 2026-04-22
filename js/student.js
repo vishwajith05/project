@@ -72,11 +72,22 @@ function renderStudentDashboard() {
           ${['breakfast','lunch','dinner'].map(meal => {
             const m = MessSchedule[meal];
             const status = booking[meal] || 'pending';
-            return `<div class="meal-card ${status}" onclick="quickToggleMeal('${meal}','${student.id}')">
-              <div class="meal-emoji">${m.emoji}</div>
-              <div class="meal-name">${m.name}</div>
-              <div class="meal-time">${m.time}</div>
-              <div class="meal-status ${status}">${status === 'booked' ? '✅ Booked' : status === 'skipped' ? '❌ Skipped' : '🔘 Pending'}</div>
+            const hasRated = Feedbacks.some(f => f.studentId === student.id && f.mealType === meal && f.createdAt.startsWith(new Date().toISOString().split('T')[0]));
+            
+            return `<div class="meal-card ${status}">
+              <div onclick="quickToggleMeal('${meal}','${student.id}')" style="flex:1">
+                <div class="meal-emoji">${m.emoji}</div>
+                <div class="meal-name">${m.name}</div>
+                <div class="meal-time">${m.time}</div>
+                <div class="meal-status ${status}">${status === 'booked' ? '✅ Booked' : status === 'skipped' ? '❌ Skipped' : '🔘 Pending'}</div>
+              </div>
+              ${status === 'booked' ? `
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:center;gap:4px">
+                  ${hasRated ? '<span style="font-size:11px;color:var(--accent-green)">⭐ Rated!</span>' : 
+                    [1,2,3,4,5].map(i => `<span style="font-size:16px;cursor:pointer;opacity:0.5;transition:0.2s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0.5" onclick="rateMeal('${meal}', ${i})">⭐</span>`).join('')
+                  }
+                </div>
+              ` : ''}
             </div>`;
           }).join('')}
         </div>
@@ -633,4 +644,25 @@ function getGreeting() {
   if (h < 12) return 'Morning';
   if (h < 17) return 'Afternoon';
   return 'Evening';
+}
+
+function rateMeal(mealType, rating) {
+  const student = AppState.currentUser;
+  const feedback = {
+    studentId: student.id,
+    studentName: student.name,
+    rating: rating,
+    topic: 'Food Quality',
+    mealType: mealType,
+    comment: `Rated ${mealType} as ${rating} stars.`
+  };
+
+  if (socket) {
+    socket.emit('SUBMIT_FEEDBACK', feedback);
+  } else {
+    Feedbacks.unshift({ ...feedback, id: Date.now(), createdAt: new Date().toISOString() });
+  }
+
+  showToast(`Thank you for rating today's ${mealType}!`, 'success');
+  renderStudentDashboard();
 }

@@ -304,40 +304,63 @@ function renderFeedback() {
   content.innerHTML = `
     <div style="margin-bottom:20px">
       <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700">Mess Feedback Portal 💬</h2>
-      <p style="color:var(--text-secondary);font-size:14px;margin-top:4px">Anonymous Student Feedback & Ratings</p>
+      <p style="color:var(--text-secondary);font-size:14px;margin-top:4px">Real-time Student Meal Ratings & Comments</p>
     </div>
 
     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      ${buildStatCard('⭐', 'orange', avgRating, 'Average Rating', null, null, 'orange')}
-      ${buildStatCard('💬', 'purple', feedbacks.length, 'Total Feedback', null, null, '')}
+      ${buildStatCard('⭐', 'orange', avgRating, 'Overall Rating', null, null, 'orange')}
+      ${buildStatCard('🍱', 'cyan', feedbacks.filter(f=>f.topic==='Food Quality').length, 'Meal Ratings', null, null, 'cyan')}
       ${buildStatCard('😍', 'green', feedbacks.filter(f=>f.rating>=4).length, 'Positive Reviews', null, null, 'green')}
       ${buildStatCard('😔', 'red', feedbacks.filter(f=>f.rating<=2).length, 'Needs Improvement', null, null, 'orange')}
     </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">💬 Recent Feedback (Anonymous)</span>
-        <span class="badge badge-pending">Privacy Mode: ON</span>
+    
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🍽️ Food Quality Ratings</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:12px">
+          ${['breakfast','lunch','dinner'].map(meal => {
+            const mealRatings = feedbacks.filter(f => f.mealType === meal);
+            const mealAvg = mealRatings.length > 0 ? (mealRatings.reduce((a,f)=>a+f.rating,0)/mealRatings.length).toFixed(1) : '0.0';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-card);border-radius:var(--radius-md);border:1px solid var(--border-color)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="font-size:24px">${MessSchedule[meal].emoji}</div>
+                <div style="font-size:14px;font-weight:600">${MessSchedule[meal].name}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:18px;font-weight:700;color:var(--accent-orange)">${mealAvg} ⭐</div>
+                <div style="font-size:11px;color:var(--text-muted)">${mealRatings.length} ratings</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:12px;padding:12px">
-      ${feedbacks.length === 0 ? `<div class="empty-state"><p>No feedback received yet.</p></div>` : 
-        feedbacks.map(f => `
-        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;transition:var(--transition)" onmouseenter="this.style.borderColor='var(--accent-primary)'" onmouseleave="this.style.borderColor='var(--border-color)'">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:32px;height:32px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;opacity:0.7">?</div>
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Anonymous Student</div>
-                <div style="font-size:11px;color:var(--text-muted)">${new Date(f.createdAt).toLocaleDateString('en-IN')} · ${f.topic || 'General'}</div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💬 Recent Feedback (Anonymous)</span>
+          <span class="badge badge-pending">Privacy Mode: ON</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:12px">
+        ${feedbacks.length === 0 ? `<div class="empty-state"><p>No feedback received yet.</p></div>` : 
+          feedbacks.map(f => `
+          <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:14px;transition:var(--transition)" onmouseenter="this.style.borderColor='var(--accent-primary)'" onmouseleave="this.style.borderColor='var(--border-color)'">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;opacity:0.7">?</div>
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Anonymous Student</div>
+                  <div style="font-size:11px;color:var(--text-muted)">${f.createdAt ? new Date(f.createdAt).toLocaleDateString('en-IN') : 'Today'} · ${f.topic || 'General'} ${f.mealType ? `(${f.mealType})` : ''}</div>
+                </div>
+              </div>
+              <div style="background:rgba(245,158,11,0.1);padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:4px">
+                <span style="color:#f59e0b;font-weight:700;font-size:14px">${f.rating}</span>
+                <span style="color:#f59e0b;font-size:14px">⭐</span>
               </div>
             </div>
-            <div style="background:rgba(245,158,11,0.1);padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:4px">
-              <span style="color:#f59e0b;font-weight:700;font-size:14px">${f.rating}</span>
-              <span style="color:#f59e0b;font-size:14px">⭐</span>
-            </div>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.5">${f.comment}</p>
           </div>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.5">${f.comment}</p>
+        `).join('')}
         </div>
-      `).join('')}
       </div>
     </div>
   `;
