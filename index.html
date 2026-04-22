@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartCampus — Gate Pass & Mess Management</title>
+  <meta name="description"
+    content="Smart Campus Management System for Gate Pass requests, Mess Management, Security and Admin controls." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">🎓</div>
+        <h1>SmartCampus</h1>
+        <p>Gate Pass & Mess Management System</p>
+      </div>
+      <form id="login-form" class="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Select Role</label>
+          <div class="role-selector">
+            <button type="button" class="role-btn active" data-role="student" onclick="selectRole('student',this)">
+              <span class="role-icon">🎒</span>Student
+            </button>
+            <button type="button" class="role-btn" data-role="warden" onclick="selectRole('warden',this)">
+              <span class="role-icon">🏠</span>Warden
+            </button>
+            <button type="button" class="role-btn" data-role="security" onclick="selectRole('security',this)">
+              <span class="role-icon">🛡️</span>Security
+            </button>
+            <button type="button" class="role-btn" data-role="mess" onclick="selectRole('mess',this)">
+              <span class="role-icon">🍽️</span>Mess
+            </button>
+            <button type="button" class="role-btn" data-role="admin" onclick="selectRole('admin',this)">
+              <span class="role-icon">⚙️</span>Admin
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="login-user">Username</label>
+          <input type="text" id="login-user" placeholder="Enter your username" value="student1" required />
+        </div>
+        <div class="form-group">
+          <label for="login-pass">Password</label>
+          <input type="password" id="login-pass" placeholder="Enter your password" value="password" required />
+        </div>
+        <button type="submit" class="btn-login">
+          <span>Sign In</span>
+          <span class="btn-arrow">→</span>
+        </button>
+        <p class="login-hint">Sign in with your registered username and password.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="app hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon-sm">🎓</div>
+        <div class="logo-text">
+          <span class="logo-title">SmartCampus</span>
+          <span class="logo-sub">Management System</span>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn">☰</button>
+      </div>
+
+      <div class="user-profile">
+        <div class="user-avatar" id="user-avatar">S</div>
+        <div class="user-info">
+          <span class="user-name" id="sidebar-username">Student</span>
+          <span class="user-role-badge" id="sidebar-role">Student</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Populated by JS -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="handleLogout()">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="main-content">
+      <div class="top-bar">
+        <div class="top-bar-left">
+          <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+          <div class="breadcrumb" id="breadcrumb">Dashboard</div>
+        </div>
+        <div class="top-bar-right">
+          <div class="notification-btn" onclick="toggleNotifications()">
+            🔔
+            <span class="notif-badge" id="notif-badge">3</span>
+          </div>
+          <div class="top-bar-time" id="top-bar-time"></div>
+        </div>
+      </div>
+
+      <!-- Notification dropdown -->
+      <div class="notification-panel hidden" id="notification-panel">
+        <div class="notif-header">Notifications</div>
+        <div class="notif-list" id="notif-list"></div>
+      </div>
+
+      <!-- Page content area -->
+      <div class="page-content" id="page-content">
+        <!-- Loaded dynamically -->
+      </div>
+
+      <!-- Mobile Bottom Navigation -->
+      <nav class="mobile-nav-bar hidden" id="mobile-nav-bar">
+        <div onclick="navigateTo('dashboard')" style="display:flex;flex-direction:column;align-items:center;color:var(--text-secondary)">
+          <span style="font-size:20px">🏠</span>
+          <span style="font-size:10px;margin-top:2px">Home</span>
+        </div>
+        <div onclick="navigateTo('gate-pass')" style="display:flex;flex-direction:column;align-items:center;color:var(--text-secondary)">
+          <span style="font-size:20px">🎫</span>
+          <span style="font-size:10px;margin-top:2px">Pass</span>
+        </div>
+        <div onclick="navigateTo('qr-pass')" style="display:flex;flex-direction:column;align-items:center;color:var(--text-secondary)">
+          <span style="font-size:20px">📱</span>
+          <span style="font-size:10px;margin-top:2px">QR</span>
+        </div>
+        <div onclick="navigateTo('mess-booking')" style="display:flex;flex-direction:column;align-items:center;color:var(--text-secondary)">
+          <span style="font-size:20px">🍽️</span>
+          <span style="font-size:10px;margin-top:2px">Mess</span>
+        </div>
+      </nav>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/student.js"></script>
+  <script src="js/warden.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/mess.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+
+</html>

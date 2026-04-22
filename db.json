@@ -1,0 +1,167 @@
+{
+  "users": [
+    {
+      "id": "S001",
+      "username": "student1",
+      "password": "password",
+      "name": "Arjun Sharma",
+      "role": "student",
+      "room": "A-101",
+      "year": "3rd Year",
+      "branch": "CSE",
+      "status": "inside",
+      "avatar": "A"
+    },
+    {
+      "id": "S002",
+      "username": "student2",
+      "password": "password",
+      "name": "Priya Patel",
+      "role": "student",
+      "room": "B-205",
+      "year": "2nd Year",
+      "branch": "ECE",
+      "status": "outside",
+      "avatar": "P"
+    },
+    {
+      "id": "S003",
+      "username": "student3",
+      "password": "password",
+      "name": "Rahul Gupta",
+      "role": "student",
+      "room": "C-312",
+      "year": "4th Year",
+      "branch": "ME",
+      "status": "inside",
+      "avatar": "R"
+    },
+    {
+      "id": "W001",
+      "username": "warden1",
+      "password": "password",
+      "name": "Dr. Ramesh Rao",
+      "role": "warden"
+    },
+    {
+      "id": "SEC01",
+      "username": "security1",
+      "password": "password",
+      "name": "Duty Guard #1",
+      "role": "security"
+    },
+    {
+      "id": "M001",
+      "username": "mess1",
+      "password": "password",
+      "name": "Chef Mohan",
+      "role": "mess"
+    },
+    {
+      "id": "ADM01",
+      "username": "admin",
+      "password": "password",
+      "name": "System Admin",
+      "role": "admin"
+    },
+    {
+      "name": "karthick",
+      "username": "karthi123",
+      "password": "karthi123",
+      "id": "SV50",
+      "role": "student",
+      "room": "10",
+      "year": "3",
+      "branch": "CS",
+      "avatar": "K",
+      "status": "inside"
+    }
+  ],
+  "gatePasses": [
+    {
+      "id": "GP001",
+      "studentId": "S001",
+      "studentName": "Arjun Sharma",
+      "reason": "Family function",
+      "destination": "Home - Mumbai",
+      "from": "2026-03-25",
+      "to": "2026-03-28",
+      "type": "day",
+      "status": "approved",
+      "wardenNote": "Approved. Have a safe trip.",
+      "createdAt": "2026-03-24",
+      "exitTime": "2026-03-25 08:30",
+      "entryTime": "",
+      "qrCode": "GP001-S001-SECURE"
+    },
+    {
+      "id": "GP002",
+      "studentId": "S002",
+      "studentName": "Priya Patel",
+      "reason": "Medical appointment",
+      "destination": "City Hospital",
+      "from": "2026-03-26",
+      "to": "2026-03-26",
+      "type": "local",
+      "status": "approved",
+      "wardenNote": "",
+      "createdAt": "2026-03-26",
+      "exitTime": "2026-03-26 10:00",
+      "entryTime": "",
+      "qrCode": "GP002-S002-SECURE"
+    },
+    {
+      "id": "GP003",
+      "studentId": "S003",
+      "studentName": "Rahul Gupta",
+      "reason": "Research work",
+      "destination": "State Library",
+      "from": "2026-03-28",
+      "to": "2026-03-28",
+      "type": "local",
+      "status": "pending",
+      "wardenNote": "",
+      "createdAt": "2026-03-27",
+      "exitTime": "",
+      "entryTime": "",
+      "qrCode": "GP003-S003-SECURE"
+    }
+  ],
+  "logs": [
+    {
+      "id": "L001",
+      "studentId": "S001",
+      "studentName": "Arjun Sharma",
+      "passId": "GP001",
+      "time": "2026-03-25 08:30",
+      "type": "exit",
+      "guard": "Duty Guard #1"
+    },
+    {
+      "id": "L002",
+      "studentId": "S002",
+      "studentName": "Priya Patel",
+      "passId": "GP002",
+      "time": "2026-03-26 10:15",
+      "type": "exit",
+      "guard": "Duty Guard #1"
+    }
+  ],
+  "messBookings": {
+    "S001": {
+      "breakfast": "booked",
+      "lunch": "booked",
+      "dinner": "skipped"
+    },
+    "S002": {
+      "breakfast": "booked",
+      "lunch": "skipped",
+      "dinner": "booked"
+    },
+    "S003": {
+      "breakfast": "skipped",
+      "lunch": "booked",
+      "dinner": "booked"
+    }
+  }
+}
