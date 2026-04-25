@@ -1,0 +1,36 @@
+type User @table {
+  firebaseUid: String!
+  role: String!
+  displayName: String!
+  email: String!
+  photoUrl: String
+  studentId: String
+  employeeId: String
+}
+
+type GatePass @table {
+  student: User!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  reason: String!
+  status: String!
+  createdAt: Timestamp!
+  rejectionReason: String
+  approvedBy: User
+}
+
+type Student @table {
+  user: User!
+  rollNumber: String!
+  roomNumber: String!
+  course: String
+  department: String
+}
+
+type MessCount @table {
+  date: Date!
+  totalStudentsPresent: Int!
+  breakfastCount: Int
+  lunchCount: Int
+  dinnerCount: Int
+}

@@ -1,0 +1,49 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    
+    "users": {
+      ".indexOn": ["id", "username"],
+      ".read": true,
+      "admin_only_write": {
+        ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
+    },
+    
+    "gatePasses": {
+      ".indexOn": ["id", "studentId", "status"],
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    "messBookings": {
+      ".read": true,
+      "$studentId": {
+        ".write": "auth != null"
+      }
+    },
+    
+    "messMenu": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    "logs": {
+      ".indexOn": ["studentId", "passId"],
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    "feedbacks": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    
+    "notifications": {
+      ".indexOn": ["studentId", "timestamp"],
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

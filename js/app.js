@@ -26,25 +26,39 @@ function initSocket() {
 
     socket.on('SYNC_STATE', (db) => {
       console.log('🔄 State sync from server');
-      if (db.users) {
+      if (!db || typeof db !== 'object') return;
+
+      if (db.users && Array.isArray(db.users) && db.users.length > 0) {
         Users = db.users;
         // Sync Students array for backward compatibility across other JS files
         const newStudents = Users.filter(u => u.role === 'student');
-        Students.splice(0, Students.length, ...newStudents);
+        if (newStudents.length > 0) {
+          Students.splice(0, Students.length, ...newStudents);
+        }
       }
-      if (db.gatePasses) GatePasses.splice(0, GatePasses.length, ...db.gatePasses);
-      if (db.logs) EntryExitLogs.splice(0, EntryExitLogs.length, ...db.logs);
+      
+      if (db.gatePasses && Array.isArray(db.gatePasses)) {
+        GatePasses.splice(0, GatePasses.length, ...db.gatePasses);
+      }
+      
+      if (db.logs && Array.isArray(db.logs)) {
+        EntryExitLogs.splice(0, EntryExitLogs.length, ...db.logs);
+      }
+      
       if (db.messBookings) {
         Object.keys(MessBookings).forEach(k => delete MessBookings[k]);
         Object.assign(MessBookings, db.messBookings);
       }
+      
       if (db.messMenu) {
         Object.keys(MessSchedule).forEach(k => delete MessSchedule[k]);
         Object.assign(MessSchedule, db.messMenu);
       }
-      if (db.feedbacks) {
+      
+      if (db.feedbacks && Array.isArray(db.feedbacks)) {
         Feedbacks.splice(0, Feedbacks.length, ...db.feedbacks);
       }
+      
       // Re-render current page if logged in
       if (!document.getElementById('app').classList.contains('hidden')) {
         navigateTo(AppState.currentPage);
@@ -229,49 +243,68 @@ function buildSidebarNav(role) {
 }
 
 function navigateTo(pageId) {
-  AppState.currentPage = pageId;
+  try {
+    AppState.currentPage = pageId;
 
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const activeNav = document.getElementById(`nav-${pageId}`);
-  if (activeNav) activeNav.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const activeNav = document.getElementById(`nav-${pageId}`);
+    if (activeNav) activeNav.classList.add('active');
 
-  const role = AppState.currentRole;
-  const menu = NavMenus[role];
-  const item = menu.find(m => m.id === pageId);
-  document.getElementById('breadcrumb').textContent = item ? item.label : 'Dashboard';
+    const role = AppState.currentRole;
+    const menu = NavMenus[role];
+    if (!menu) throw new Error(`Nav menu not found for role: ${role}`);
+    
+    const item = menu.find(m => m.id === pageId);
+    document.getElementById('breadcrumb').textContent = item ? item.label : 'Dashboard';
 
-  Object.values(allCharts).forEach(c => { try { c.destroy(); } catch(ex) {} });
-  allCharts = {};
+    Object.values(allCharts).forEach(c => { try { c.destroy(); } catch(ex) {} });
+    allCharts = {};
 
-  const content = document.getElementById('page-content');
-  content.innerHTML = '';
-  content.className = 'page-content page-animate';
+    const content = document.getElementById('page-content');
+    content.innerHTML = '';
+    content.className = 'page-content page-animate';
 
-  const rolePages = {
-    student: { dashboard: renderStudentDashboard, 'gate-pass': renderGatePassPage, 'gate-history': renderGateHistory, 'qr-pass': renderQRPage, 'mess-booking': renderMessBooking, 'mess-menu': renderMessMenu },
-    warden: { dashboard: renderWardenDashboard, 'pending-passes': renderPendingPasses, 'all-passes': renderAllPasses, students: renderStudentsPage },
-    security: { dashboard: renderSecurityDashboard, scanner: renderScanner, 'entry-exit': renderEntryExit, 'active-passes': renderActivePasses },
-    mess: { dashboard: renderMessDashboard, 'meal-counts': renderMealCounts, attendance: renderAttendance, 'menu-mgmt': renderMenuMgmt, feedback: renderFeedback },
-    admin: { dashboard: renderAdminDashboard, 'campus-status': renderCampusStatus, 'pending-admin': renderPendingAdmin, 'all-students': renderAllStudents, 'mess-stats': renderMessStats, 'user-mgmt': renderUserMgmt, reports: renderReports },
-  };
+    const rolePages = {
+      student: { dashboard: renderStudentDashboard, 'gate-pass': renderGatePassPage, 'gate-history': renderGateHistory, 'qr-pass': renderQRPage, 'mess-booking': renderMessBooking, 'mess-menu': renderMessMenu, 'feedback': renderFeedback },
+      warden: { dashboard: renderWardenDashboard, 'pending-passes': renderPendingPasses, 'all-passes': renderAllPasses, students: renderStudentsPage },
+      security: { dashboard: renderSecurityDashboard, scanner: renderScanner, 'entry-exit': renderEntryExit, 'active-passes': renderActivePasses },
+      mess: { dashboard: renderMessDashboard, 'meal-counts': renderMealCounts, attendance: renderAttendance, 'menu-mgmt': renderMenuMgmt, feedback: renderFeedback },
+      admin: { dashboard: renderAdminDashboard, 'campus-status': renderCampusStatus, 'pending-admin': renderPendingAdmin, 'all-students': renderAllStudents, 'mess-stats': renderMessStats, 'user-mgmt': renderUserMgmt, reports: renderReports },
+    };
 
-  const pages = rolePages[AppState.currentRole] || {};
-  const renderer = pages[pageId];
-  if (renderer) renderer();
-  else content.innerHTML = `<div class="empty-state"><div class="empty-icon">🚧</div><p>This page is under construction</p></div>`;
-
-  // Mobile nav bar logic
-  const mobileNav = document.getElementById('mobile-nav-bar');
-  if (mobileNav) {
-    if (window.innerWidth <= 768 && role === 'student') {
-      mobileNav.classList.remove('hidden');
+    const pages = rolePages[AppState.currentRole] || {};
+    const renderer = pages[pageId];
+    if (renderer) {
+      renderer();
     } else {
-      mobileNav.classList.add('hidden');
+      content.innerHTML = `<div class="empty-state"><div class="empty-icon">🚧</div><p>This page is under construction</p></div>`;
     }
-  }
 
-  document.getElementById('sidebar').classList.remove('mobile-open');
-  document.getElementById('notification-panel').classList.add('hidden');
+    // Mobile nav bar logic
+    const mobileNav = document.getElementById('mobile-nav-bar');
+    if (mobileNav) {
+      if (window.innerWidth <= 768 && role === 'student') {
+        mobileNav.classList.remove('hidden');
+      } else {
+        mobileNav.classList.add('hidden');
+      }
+    }
+
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('notification-panel').classList.add('hidden');
+  } catch (err) {
+    console.error('❌ Navigation Error:', err);
+    document.getElementById('page-content').innerHTML = `
+      <div class="card" style="margin-top:20px;border-color:var(--accent-red)">
+        <div style="text-align:center;padding:40px">
+          <div style="font-size:48px;margin-bottom:20px">⚠️</div>
+          <h3>Dashboard Rendering Error</h3>
+          <p style="color:var(--text-secondary);margin:10px 0">We encountered a problem while displaying this page. This usually happens when database data is missing or incomplete.</p>
+          <button class="btn btn-primary" onclick="location.reload()">🔄 Reload Application</button>
+        </div>
+      </div>
+    `;
+  }
 }
 
 // ---- UI Helpers ----

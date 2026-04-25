@@ -4,8 +4,10 @@
 
 function renderStudentDashboard() {
   const content = document.getElementById('page-content');
-  const student = Students.find(s => s.id === AppState.currentUser.id) || Students[0];
-  const myPasses = GatePasses.filter(p => p.studentId === student.id);
+  if (!AppState.currentUser) return;
+
+  const student = Students.find(s => s.id === AppState.currentUser.id) || AppState.currentUser;
+  const myPasses = GatePasses.filter(p => p.studentId === student.id) || [];
   const approved = myPasses.filter(p => p.status === 'approved').length;
   const pending = myPasses.filter(p => p.status === 'pending').length;
   const booking = MessBookings[student.id] || {};

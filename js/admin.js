@@ -4,17 +4,20 @@
 
 function renderAdminDashboard() {
   const content = document.getElementById('page-content');
-  const inside = Students.filter(s => s.status === 'inside');
-  const outside = Students.filter(s => s.status === 'outside');
-  const pending = GatePasses.filter(p => p.status === 'pending');
-  const approved = GatePasses.filter(p => p.status === 'approved');
+  const totalStudents = Students.length || 1; // Prevent division by zero
+  const inside = Students.filter(s => s.status === 'inside') || [];
+  const outside = Students.filter(s => s.status === 'outside') || [];
+  const pending = GatePasses.filter(p => p.status === 'pending') || [];
+  const approved = GatePasses.filter(p => p.status === 'approved') || [];
 
   let bCnt = 0, lCnt = 0, dCnt = 0;
-  Object.values(MessBookings).forEach(b => {
-    if (b.breakfast === 'booked') bCnt++;
-    if (b.lunch === 'booked') lCnt++;
-    if (b.dinner === 'booked') dCnt++;
-  });
+  if (MessBookings) {
+    Object.values(MessBookings).forEach(b => {
+      if (b.breakfast === 'booked') bCnt++;
+      if (b.lunch === 'booked') lCnt++;
+      if (b.dinner === 'booked') dCnt++;
+    });
+  }
 
   content.innerHTML = `
     <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -30,7 +33,7 @@ function renderAdminDashboard() {
 
     <!-- Hero stats -->
     <div class="stats-grid">
-      ${buildStatCard('🏫', 'green', inside.length, 'Students On Campus', `${Math.round(inside.length/Students.length*100)}% of total`, 'up', 'green')}
+      ${buildStatCard('🏫', 'green', inside.length, 'Students On Campus', `${Math.round(inside.length/totalStudents*100)}% of total`, 'up', 'green')}
       ${buildStatCard('🚶', 'red', outside.length, 'Students Outside', `${outside.length} with valid pass`, outside.length > 0 ? 'up' : null, 'orange')}
       ${buildStatCard('⏳', 'orange', pending.length, 'Pending Passes', 'awaiting warden', pending.length > 0 ? 'up' : null, 'orange')}
       ${buildStatCard('📋', 'purple', GatePasses.length, 'Total Gate Passes', 'all time', 'up', '')}
@@ -44,10 +47,10 @@ function renderAdminDashboard() {
           <div style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;margin-bottom:6px">
               <span style="font-size:13px;color:var(--text-secondary)">Campus Occupancy</span>
-              <span style="font-size:13px;font-weight:600">${Math.round(inside.length/Students.length*100)}%</span>
+              <span style="font-size:13px;font-weight:600">${Math.round(inside.length/totalStudents*100)}%</span>
             </div>
             <div class="progress-bar-wrap" style="height:12px">
-              <div class="progress-bar purple" style="width:${Math.round(inside.length/Students.length*100)}%"></div>
+              <div class="progress-bar purple" style="width:${Math.round(inside.length/totalStudents*100)}%"></div>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
@@ -380,8 +383,9 @@ function renderMessStats() {
 function renderReports() {
   const content = document.getElementById('page-content');
   content.innerHTML = `
-    <div style="margin-bottom:20px">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">📊 System Reports</h2>
+    <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">📊 System Reports & Maintenance</h2>
+      <button class="btn btn-outline btn-sm" onclick="openDBMgmt()">⚙️ Database Management</button>
     </div>
     <div class="grid-3">
       ${[
@@ -668,3 +672,72 @@ function downloadReportPDF(reportTitle) {
   doc.save(`${reportTitle.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
   showToast(`${reportTitle} downloaded!`, 'success');
 }
+
+function openDBMgmt() {
+  openModal(`
+    <div class="modal" style="max-width:450px">
+      <div class="modal-header">
+        <span class="modal-title">⚙️ Database Management</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding:10px">
+        <div class="alert alert-warning" style="margin-bottom:15px">
+          <strong>Notice:</strong> This system is now connected to <strong>Firebase</strong>. 
+          Use these tools to manage your cloud data.
+        </div>
+        
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding:15px;background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1);border-radius:var(--radius-md)">
+            <h4 style="margin-bottom:8px">First-Time Setup</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Push all local mock data (Students, Admin accounts, etc.) to your Firebase database.</p>
+            <button class="btn btn-primary" style="width:100%" onclick="migrateToFirebase()">🚀 Initialize Cloud DB</button>
+          </div>
+
+          <div style="padding:15px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.1);border-radius:var(--radius-md)">
+            <h4 style="margin-bottom:8px;color:var(--accent-red)">Factory Reset</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Wipe all cloud data and start fresh. Warning: This cannot be undone.</p>
+            <button class="btn btn-outline" style="width:100%;border-color:var(--accent-red);color:var(--accent-red)" onclick="resetFirebaseDB()">🗑️ Wipe Cloud Database</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function migrateToFirebase() {
+  if (!confirm("This will upload all current local data to Firebase. Continue?")) return;
+  
+  const initialData = {
+    users: [...Object.values(RoleUsers).map(u => ({...u, role: Object.keys(RoleUsers).find(k => RoleUsers[k] === u)})), ...Students],
+    gatePasses: GatePasses,
+    logs: EntryExitLogs,
+    feedbacks: Feedbacks,
+    messBookings: MessBookings,
+    messMenu: MessSchedule,
+    notifications: []
+  };
+
+  database.ref('/').set(initialData)
+    .then(() => {
+      showToast("✅ Firebase database initialized successfully!", "success");
+      closeModal();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("❌ Migration failed. Check console.", "error");
+    });
+}
+
+function resetFirebaseDB() {
+  if (!confirm("ARE YOU SURE? This will delete EVERYTHING from the cloud database.")) return;
+  
+  database.ref('/').set({})
+    .then(() => {
+      showToast("🧹 Database wiped clean.", "success");
+      location.reload();
+    })
+    .catch(err => {
+      showToast("❌ Reset failed.", "error");
+    });
+}
+

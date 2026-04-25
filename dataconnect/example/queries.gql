@@ -1,0 +1,62 @@
+query AllStudents @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  students {
+    id
+    user {
+      displayName
+      email
+    }
+    rollNumber
+    roomNumber
+    course
+    department
+  }
+}
+
+query MyGatePasses @auth(level: USER) {
+  gatePasses(where: { student: { id: { eq_expr: "auth.uid" } } }) {
+    id
+    student {
+      user {
+        displayName
+      }
+      rollNumber
+    }
+    startTime
+    endTime
+    reason
+    status
+    rejectionReason
+    approvedBy {
+      displayName
+    }
+    createdAt
+  }
+}
+
+mutation CreateGatePass($startTime: Timestamp!, $endTime: Timestamp!, $reason: String!) @auth(level: USER) {
+  gatePass_insert(
+    data: {
+      studentId_expr: "auth.uid"
+      startTime: $startTime
+      endTime: $endTime
+      reason: $reason
+      status: "Pending"
+      createdAt_expr: "request.time"
+    }
+  ) {
+    id
+  }
+}
+
+mutation UpdateGatePassStatus($id: UUID!, $status: String!, $rejectionReason: String) @auth(expr: "auth.token.role == 'Admin' || auth.token.role == 'Warden'") {
+  gatePass_update(
+    id: $id
+    data: {
+      status: $status
+      rejectionReason: $rejectionReason
+      approvedById_expr: "auth.uid"
+    }
+  ) {
+    id 
+  }
+}

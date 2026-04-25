@@ -1,0 +1,52 @@
+mutation CreateDemoData @transaction @auth(level: PUBLIC, insecureReason: "This is seed data for the application, so it's safe to be public.") {
+  user_insertMany(data: [
+    {
+      id: "c6a1e3b0-6f5d-4f8e-8c7e-0b9a2d1f4c5e",
+      firebaseUid: "firebaseuid1",
+      role: "student",
+      displayName: "Alice Smith",
+      email: "alice.smith@example.com",
+      studentId: "S001"
+    },
+    {
+      id: "a2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d",
+      firebaseUid: "firebaseuid2",
+      role: "faculty",
+      displayName: "Dr. Bob Johnson",
+      email: "bob.johnson@example.com",
+      employeeId: "E001"
+    }
+  ])
+  student_insertMany(data: [
+    {
+      id: "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      userId: "c6a1e3b0-6f5d-4f8e-8c7e-0b9a2d1f4c5e",
+      rollNumber: "ROLL001",
+      roomNumber: "A101",
+      course: "Computer Science",
+      department: "CSE"
+    }
+  ])
+  gatePass_insertMany(data: [
+    {
+      id: "f1e2d3c4-b5a6-7f8e-9d0c-1b2a3f4e5d6c",
+      studentId: "c6a1e3b0-6f5d-4f8e-8c7e-0b9a2d1f4c5e",
+      startTime: "2024-07-20T09:00:00Z",
+      endTime: "2024-07-20T17:00:00Z",
+      reason: "Medical appointment",
+      status: "Approved",
+      createdAt: "2024-07-19T10:00:00Z",
+      approvedById: "a2b3c4d5-e6f7-8a9b-0c1d-2e3f4a5b6c7d"
+    }
+  ])
+  messCount_insertMany(data: [
+    {
+      id: "1c2d3e4f-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+      date: "2024-07-20",
+      totalStudentsPresent: 150,
+      breakfastCount: 100,
+      lunchCount: 130,
+      dinnerCount: 110
+    }
+  ])
+}
